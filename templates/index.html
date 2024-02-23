@@ -1,0 +1,80 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Digit Recognition</title>
+    <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.5.1/jquery.min.js"></script>
+</head>
+<body>
+    <h1>Handwritten Digit Recognizer</h1>
+    <p>Draw any digit inside canvas</p>
+    <canvas id="canvas" width="220" height="220" style="border:1px solid #000;"></canvas><br>
+    <button onclick="recognizeDigit()" style="background-color:green;border-radius: 30px;width:120px;height:30px">Recognize Digit</button>
+    <button onclick="resetCanvas()" style="background-color:red;border-radius: 30px;width:70px;height:30px">Reset</button><br>
+    <div id="result" style="background-color: rgb(191, 195, 255);margin-top: 10px;width:170px">
+        <!-- This is where the recognized digit and probabilities will be shown -->
+    </div>
+
+    <script>
+        var canvas = document.getElementById('canvas');
+        var ctx = canvas.getContext('2d');
+
+        var drawing = false;
+        var prevX = 0;
+        var prevY = 0;
+
+        canvas.addEventListener('mousedown', function(e) {
+            drawing = true;
+            prevX = e.clientX - canvas.offsetLeft;
+            prevY = e.clientY - canvas.offsetTop;
+        });       
+
+        canvas.addEventListener('mousemove', function(e) {
+            if (drawing) {
+                drawLine(prevX, prevY, e.clientX - canvas.offsetLeft, e.clientY - canvas.offsetTop);
+                prevX = e.clientX - canvas.offsetLeft;
+                prevY = e.clientY - canvas.offsetTop;
+            }
+        });
+
+        canvas.addEventListener('mouseup', function(e) {
+            drawing = false;
+        });
+
+        canvas.addEventListener('mouseleave', function(e) {
+            drawing = false;
+        });
+
+        function drawLine(x1, y1, x2, y2) {
+            ctx.beginPath();
+            ctx.moveTo(x1, y1);
+            ctx.lineTo(x2, y2);
+            ctx.strokeStyle = '#000';
+            ctx.lineWidth = 20;
+            ctx.stroke();
+            ctx.closePath();
+        }
+
+        function recognizeDigit() {
+            var imageBase64 = canvas.toDataURL('image/png');
+            $.ajax({
+                type: 'POST',
+                url: '/recognize_digit',
+                data: {'imageData': imageBase64},
+                success: function(response) {
+                    var resultDiv = document.getElementById('result');
+                    resultDiv.innerHTML = 'Recognized Digit: ' + response.digit + '<br>';
+                    resultDiv.innerHTML += 'Probabilities: ' + response.probabilities.join(', ');
+                },
+            });
+        }
+
+        function resetCanvas() {
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            var resultDiv = document.getElementById('result');
+            resultDiv.innerHTML = ''; // Clear the result area when resetting
+        }
+    </script>
+</body>
+</html>
